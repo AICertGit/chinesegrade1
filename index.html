@@ -28,31 +28,31 @@
             <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">中文听写练习</h1>
             <p class="text-center text-gray-500 mb-6">马力平教材 - 第一单元</p>
 
-            <!-- 模式切换标签 -->
-            <div class="flex border-b-2 border-gray-200 mb-4">
-                <button id="tab-chars" class="flex-1 py-2 text-center text-gray-500 hover:text-gray-700 focus:outline-none tab-active">
-                    生字练习
-                </button>
-                <button id="tab-strokes" class="flex-1 py-2 text-center text-gray-500 hover:text-gray-700 focus:outline-none">
-                    笔画练习
+            <!-- [新增] 开始屏幕 -->
+            <div id="start-screen" class="text-center py-10">
+                <h2 class="text-2xl font-semibold mb-6">准备好了吗？</h2>
+                <p class="text-gray-600 mb-8">点击“开始”来唤醒语音功能。</p>
+                <button id="start-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg text-xl transition-transform transform hover:scale-105 focus:outline-none">
+                    开始练习
                 </button>
             </div>
 
-            <!-- 听写区域 -->
-            <div id="dictation-area">
-                <!-- 进度显示 -->
-                <div class="flex justify-between items-center mb-4">
-                    <span id="progress" class="text-lg font-medium text-gray-600">...</span>
-                    <!-- 播放按钮 -->
-                    <button id="play-btn" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-transform transform hover:scale-110 focus:outline-none">
-                        <!-- SVG 喇叭图标 -->
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12 4a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1zm3 2a1 1 0 011 1v6a1 1 0 11-2 0V7a1 1 0 011-1z"></path>
-                        </svg>
+            <!-- [修改] 练习容器，默认隐藏 -->
+            <div id="practice-container" class="hidden">
+                <!-- 模式切换标签 -->
+                <div class="flex border-b-2 border-gray-200 mb-4">
+                    <button id="tab-chars" class="flex-1 py-2 text-center text-gray-500 hover:text-gray-700 focus:outline-none tab-active">
+                        生字练习
+                    </button>
+                    <button id="tab-strokes" class="flex-1 py-2 text-center text-gray-500 hover:text-gray-700 focus:outline-none">
+                        笔画练习
                     </button>
                 </div>
 
-                <!-- 答案显示区域 (默认隐藏) -->
+                <!-- 听写区域 -->
+                <div id="dictation-area">
+                    <!-- 进度显示 -->
+                    <div class="flex justify-between items-center mb-4">
                 <div id="answer-display" class="text-center mb-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg hidden">
                     <span class="font-bold">答案：</span>
                     <span id="answer-text" class="text-5xl font-bold" style="font-family: 'KaiTi', 'STKaiti', 'serif';"></span>
@@ -63,7 +63,7 @@
                     <h2 class="text-2xl font-bold mb-2">🎉 恭喜你！</h2>
                     <p class="text-lg">你已经完成了本组的全部练习！</p>
                     <button id="restart-btn" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                        重新开始
+                        </svg>
                     </button>
                 </div>
 
@@ -80,7 +80,7 @@
                     </button>
                     <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
                         下一个
-                    </button>
+                    </div>
                 </div>
             </div>
             
@@ -143,6 +143,11 @@
             const restartBtn = document.getElementById('restart-btn');
             const dictationArea = document.getElementById('dictation-area');
             const ttsUnsupported = document.getElementById('tts-unsupported');
+
+            // [新增] 开始屏幕和练习容器
+            const startScreen = document.getElementById('start-screen');
+            const startBtn = document.getElementById('start-btn');
+            const practiceContainer = document.getElementById('practice-container');
 
             // --- 4. 语音合成 ---
             let synth;
@@ -354,6 +359,32 @@
 
             // --- 7. 事件监听 ---
             
+            // [新增] 开始按钮监听
+            startBtn.addEventListener('click', () => {
+                // 1. 再次尝试加载语音，因为用户已交互
+                loadVoices();
+
+                // 2. [关键] 播放一个简短的“唤醒”语音来启动语音引擎
+                synth.cancel(); // 清除队列
+                const welcomeUtterance = new SpeechSynthesisUtterance('你好');
+                
+                // 立即尝试设置语音，如果不行就用 lang
+                if (chineseVoice) {
+                    welcomeUtterance.voice = chineseVoice;
+                } else {
+                    welcomeUtterance.lang = 'zh-CN';
+                }
+                welcomeUtterance.rate = 0.1; // 播放得很快
+                synth.speak(welcomeUtterance);
+                
+                // 3. 隐藏开始屏幕, 显示练习界面
+                startScreen.classList.add('hidden');
+                practiceContainer.classList.remove('hidden');
+
+                // 4. 加载第一个词
+                setMode('chars'); // 默认加载生字
+            });
+
             // 模式切换
             tabChars.addEventListener('click', () => setMode('chars'));
             tabStrokes.addEventListener('click', () => setMode('strokes'));
@@ -388,7 +419,8 @@
                 synth.onvoiceschanged = loadVoices;
             }
 
-            setMode('chars'); // 默认加载生字
+            // [删除] 不再立即加载，等待“开始”按钮
+            // setMode('chars'); 
         });
     </script>
 </body>

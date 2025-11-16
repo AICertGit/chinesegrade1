@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中文听写练习 (马力平第一单元)</title>
-    <!-- 引入Tailwind CSS，用于美化界面 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* 自定义样式，让画板看起来更清晰 */
@@ -28,7 +27,6 @@
             <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">中文听写练习</h1>
             <p class="text-center text-gray-500 mb-6">马力平教材 - 第一单元</p>
 
-            <!-- [新增] 开始屏幕 -->
             <div id="start-screen" class="text-center py-10">
                 <h2 class="text-2xl font-semibold mb-6">准备好了吗？</h2>
                 <p class="text-gray-600 mb-8">点击“开始”来唤醒语音功能。</p>
@@ -37,9 +35,7 @@
                 </button>
             </div>
 
-            <!-- [修改] 练习容器，默认隐藏 -->
             <div id="practice-container" class="hidden">
-                <!-- 模式切换标签 -->
                 <div class="flex border-b-2 border-gray-200 mb-4">
                     <button id="tab-chars" class="flex-1 py-2 text-center text-gray-500 hover:text-gray-700 focus:outline-none tab-active">
                         生字练习
@@ -49,42 +45,46 @@
                     </button>
                 </div>
 
-                <!-- 听写区域 -->
                 <div id="dictation-area">
-                    <!-- 进度显示 -->
                     <div class="flex justify-between items-center mb-4">
-                <div id="answer-display" class="text-center mb-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg hidden">
-                    <span class="font-bold">答案：</span>
-                    <span id="answer-text" class="text-5xl font-bold" style="font-family: 'KaiTi', 'STKaiti', 'serif';"></span>
-                </div>
+                        <span id="progress" class="text-lg text-gray-600"></span>
+                        <button id="play-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-full shadow-lg transition-transform transform hover:scale-110 focus:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                    </div>
 
-                <!-- 结束提示 (默认隐藏) -->
-                <div id="complete-display" class="text-center mb-4 p-4 bg-green-100 text-green-800 rounded-lg hidden">
-                    <h2 class="text-2xl font-bold mb-2">🎉 恭喜你！</h2>
-                    <p class="text-lg">你已经完成了本组的全部练习！</p>
-                    <button id="restart-btn" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                        </svg>
-                    </button>
-                </div>
+                    <div id="answer-display" class="text-center mb-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg hidden">
+                        <span class="font-bold">答案：</span>
+                        <span id="answer-text" class="text-5xl font-bold" style="font-family: 'KaiTi', 'STKaiti', 'serif';"></span>
+                    </div>
 
-                <!-- 绘画板 -->
-                <canvas id="draw-canvas"></canvas>
+                    <div id="complete-display" class="text-center mb-4 p-4 bg-green-100 text-green-800 rounded-lg hidden">
+                        <h2 class="text-2xl font-bold mb-2">🎉 恭喜你！</h2>
+                        <p class="text-lg">你已经完成了本组的全部练习！</p>
+                        <button id="restart-btn" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                            重新开始
+                        </button>
+                    </div>
 
-                <!-- 控制按钮 -->
-                <div class="grid grid-cols-3 gap-4 mt-4">
-                    <button id="clear-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
-                        清除
-                    </button>
-                    <button id="show-answer-btn" class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
-                        看答案
-                    </button>
-                    <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
-                        下一个
+                    <canvas id="draw-canvas"></canvas>
+
+                    <div class="grid grid-cols-3 gap-4 mt-4">
+                        <button id="clear-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
+                            清除
+                        </button>
+                        <button id="show-answer-btn" class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
+                            看答案
+                        </button>
+                        <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
+                            下一个
+                        </button>
                     </div>
                 </div>
             </div>
             
-            <!-- 语音不支持提示 -->
             <div id="tts-unsupported" class="text-center p-4 bg-red-100 text-red-700 rounded-lg hidden">
                 抱歉，你的浏览器不支持语音朗读功能。
             </div>
@@ -130,13 +130,13 @@
             // --- 3. DOM 元素 ---
             const canvas = document.getElementById('draw-canvas');
             const ctx = canvas.getContext('2d');
-            const playBtn = document.getElementById('play-btn');
+            const playBtn = document.getElementById('play-btn'); // [FIX] 这个按钮现在存在于HTML中
             const clearBtn = document.getElementById('clear-btn');
             const showAnswerBtn = document.getElementById('show-answer-btn');
             const nextBtn = document.getElementById('next-btn');
             const tabChars = document.getElementById('tab-chars');
             const tabStrokes = document.getElementById('tab-strokes');
-            const progressEl = document.getElementById('progress');
+            const progressEl = document.getElementById('progress'); // [FIX] 这个元素现在存在于HTML中
             const answerDisplayEl = document.getElementById('answer-display');
             const answerTextEl = document.getElementById('answer-text');
             const completeDisplayEl = document.getElementById('complete-display');
@@ -163,8 +163,6 @@
             // [新增] 尝试加载中文语音
             function loadVoices() {
                 // 尝试找到 'zh-CN' 语音
-                // 某些浏览器可能需要 'zh-TW' (台湾) 或 'zh-HK' (香港)
-                // 我们优先 'zh-CN'
                 const voices = synth.getVoices();
                 chineseVoice = voices.find(voice => voice.lang === 'zh-CN');
                 
@@ -172,8 +170,6 @@
                 if (!chineseVoice) {
                     chineseVoice = voices.find(voice => voice.lang.startsWith('zh'));
                 }
-                
-                // console.log('中文语音:', chineseVoice); // 可用于调试
             }
 
             // --- 5. 核心功能函数 ---
@@ -234,7 +230,6 @@
                 hideAnswer();
                 
                 // [修改] 移除自动播放，改为用动画提示用户点击播放
-                // speak();
                 playBtn.classList.add('animate-pulse'); // 提示用户点击
             }
 
@@ -246,30 +241,42 @@
             }
 
             // 朗读
+            // [ADJUSTMENT] 这是你要求的主要更改
             function speak() {
                 if (!currentWord) return;
                 playBtn.classList.remove('animate-pulse'); // [新增] 一旦点击，就移除动画
                 synth.cancel(); // 停止上一个
+                
+                // 1. [新增] 朗读提示语 "请听写"
+                const introText = "请听写";
+                const introUtterance = new SpeechSynthesisUtterance(introText);
+                if (chineseVoice) {
+                    introUtterance.voice = chineseVoice;
+                } else {
+                    // 确保语音被设置
+                    loadVoices();
+                    if(chineseVoice) introUtterance.voice = chineseVoice;
+                    else introUtterance.lang = 'zh-CN';
+                }
+                introUtterance.rate = 1.0; // 提示语用正常语速
+                synth.speak(introUtterance);
+
+
+                // 2. [修改] 朗读当前的字词
                 const textToSpeak = (activeMode === 'chars') ? currentWord.char : currentWord.name;
                 const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
                 // [修改] 关键修复：显式设置语音
-                // 确保语音已加载，如果找到了，就使用它
                 if (chineseVoice) {
                     utterance.voice = chineseVoice;
                 } else {
-                    // 如果还没找到（例如，还没加载完），
-                    // 再次尝试加载并回退到仅设置 lang
-                    loadVoices(); 
-                    if (chineseVoice) {
-                        utterance.voice = chineseVoice;
-                    } else {
-                        // 最后的备用方案
-                        utterance.lang = 'zh-CN';
-                    }
+                    // 最后的备用方案
+                    utterance.lang = 'zh-CN';
                 }
                 
                 utterance.rate = 0.8; // 稍慢的语速
+                
+                // [关键] 浏览器会自动将这个语音排在 "请听写" 之后播放
                 synth.speak(utterance);
             }
 
@@ -368,7 +375,6 @@
                 synth.cancel(); // 清除队列
                 const welcomeUtterance = new SpeechSynthesisUtterance('你好');
                 
-                // 立即尝试设置语音，如果不行就用 lang
                 if (chineseVoice) {
                     welcomeUtterance.voice = chineseVoice;
                 } else {
@@ -413,14 +419,10 @@
             resizeCanvas();
             
             // [修改] 立即加载语音，并监听变化
-            // 语音列表可能不会立即加载，所以我们需要监听
             loadVoices();
             if (synth.onvoiceschanged !== undefined) {
                 synth.onvoiceschanged = loadVoices;
             }
-
-            // [删除] 不再立即加载，等待“开始”按钮
-            // setMode('chars'); 
         });
     </script>
 </body>

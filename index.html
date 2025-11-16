@@ -125,6 +125,7 @@
             let activeMode = 'chars'; // 'chars' 或 'strokes'
             let isDrawing = false;
             let isAnswerVisible = false;
+            let chineseVoice = null; // [新增] 用于存储中文语音
 
             // --- 3. DOM 元素 ---
             const canvas = document.getElementById('draw-canvas');
@@ -152,6 +153,22 @@
                 dictationArea.classList.add('hidden');
                 ttsUnsupported.classList.remove('hidden');
                 return; // 结束初始化
+            }
+
+            // [新增] 尝试加载中文语音
+            function loadVoices() {
+                // 尝试找到 'zh-CN' 语音
+                // 某些浏览器可能需要 'zh-TW' (台湾) 或 'zh-HK' (香港)
+                // 我们优先 'zh-CN'
+                const voices = synth.getVoices();
+                chineseVoice = voices.find(voice => voice.lang === 'zh-CN');
+                
+                // 如果找不到 'zh-CN'，尝试找任何中文语音
+                if (!chineseVoice) {
+                    chineseVoice = voices.find(voice => voice.lang.startsWith('zh'));
+                }
+                
+                // console.log('中文语音:', chineseVoice); // 可用于调试
             }
 
             // --- 5. 核心功能函数 ---
@@ -230,7 +247,23 @@
                 synth.cancel(); // 停止上一个
                 const textToSpeak = (activeMode === 'chars') ? currentWord.char : currentWord.name;
                 const utterance = new SpeechSynthesisUtterance(textToSpeak);
-                utterance.lang = 'zh-CN'; // 设置为普通话
+
+                // [修改] 关键修复：显式设置语音
+                // 确保语音已加载，如果找到了，就使用它
+                if (chineseVoice) {
+                    utterance.voice = chineseVoice;
+                } else {
+                    // 如果还没找到（例如，还没加载完），
+                    // 再次尝试加载并回退到仅设置 lang
+                    loadVoices(); 
+                    if (chineseVoice) {
+                        utterance.voice = chineseVoice;
+                    } else {
+                        // 最后的备用方案
+                        utterance.lang = 'zh-CN';
+                    }
+                }
+                
                 utterance.rate = 0.8; // 稍慢的语速
                 synth.speak(utterance);
             }
@@ -347,6 +380,14 @@
 
             // --- 8. 初始化 ---
             resizeCanvas();
+            
+            // [修改] 立即加载语音，并监听变化
+            // 语音列表可能不会立即加载，所以我们需要监听
+            loadVoices();
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = loadVoices;
+            }
+
             setMode('chars'); // 默认加载生字
         });
     </script>

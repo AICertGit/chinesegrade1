@@ -5,18 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中文听写练习 (马力平第一单元)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+
     <style>
-        /* 自定义样式，让画板看起来更清晰 */
         canvas {
-            touch-action: none; /* 防止在移动设备上绘图时页面滚动 */
-            border: 2px solid #e2e8f0; /* 边框 */
-            border-radius: 0.5rem; /* 圆角 */
+            touch-action: none;
+            border: 2px solid #e2e8f0; 
+            border-radius: 0.5rem; 
+            background-color: #fdfdfd;
         }
-        /* 激活标签的样式 */
         .tab-active {
-            border-bottom-color: #3b82f6; /* 蓝色下划线 */
-            color: #3b82f6; /* 蓝色文字 */
-            font-weight: 600; /* 粗体 */
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        #comparison-box {
+            border: 2px dashed #cbd5e1;
+            background-color: #f8fafc;
+        }
+        
+        /* [MODIFIED] 2. 创建一个新的CSS类来使用这个手写字体 */
+        .handwriting-font {
+            font-family: 'Ma Shan Zheng', cursive;
         }
     </style>
 </head>
@@ -58,7 +71,7 @@
 
                     <div id="answer-display" class="text-center mb-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg hidden">
                         <span class="font-bold">答案：</span>
-                        <span id="answer-text" class="text-5xl font-bold" style="font-family: 'KaiTi', 'STKaiti', 'serif';"></span>
+                        <span id="answer-text" class="text-5xl font-bold handwriting-font"></span>
                     </div>
 
                     <div id="complete-display" class="text-center mb-4 p-4 bg-green-100 text-green-800 rounded-lg hidden">
@@ -69,14 +82,20 @@
                         </button>
                     </div>
 
-                    <canvas id="draw-canvas"></canvas>
+                    <div class="flex w-full gap-4 mb-4">
+                        <canvas id="draw-canvas" class="w-2/3"></canvas>
+                        
+                        <div id="comparison-box" class="w-1/3 rounded-lg flex items-center justify-center hidden">
+                             <span id="comparison-text" class="text-7xl handwriting-font"></span>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-3 gap-4 mt-4">
                         <button id="clear-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
                             清除
                         </button>
                         <button id="show-answer-btn" class="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
-                            看答案
+                            检查答案
                         </button>
                         <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow transition-transform transform hover:scale-105 focus:outline-none">
                             下一个
@@ -94,8 +113,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- 1. 数据定义 ---
-
-            // 生字列表 (32个)
             const characters = [
                 { char: "上" }, { char: "下" }, { char: "口" }, { char: "目" },
                 { char: "中" }, { char: "山" }, { char: "左" }, { char: "右" },
@@ -106,15 +123,10 @@
                 { char: "四" }, { char: "去" }, { char: "九" }, { char: "门" },
                 { char: "共" }, { char: "走" }, { char: "加" }, { char: "比" }
             ];
-
-            // 笔画列表 (7个)
             const strokes = [
-                { name: "撇", char: "丿" },
-                { name: "捺", char: "＼" },
-                { name: "竖勾", char: "亅" },
-                { name: "竖折勾", char: "乚" },
-                { name: "横折勾", char: "𠃌" },
-                { name: "横折弯勾", char: "乙" },
+                { name: "撇", char: "丿" }, { name: "捺", char: "＼" },
+                { name: "竖勾", char: "亅" }, { name: "竖折勾", char: "乚" },
+                { name: "横折勾", char: "𠃌" }, { name: "横折弯勾", char: "乙" },
                 { name: "竖提", char: "𠄌" }
             ];
 
@@ -122,59 +134,52 @@
             let currentList = [];
             let currentIndex = 0;
             let currentWord = null;
-            let activeMode = 'chars'; // 'chars' 或 'strokes'
+            let activeMode = 'chars';
             let isDrawing = false;
             let isAnswerVisible = false;
-            let chineseVoice = null; // [新增] 用于存储中文语音
+            let chineseVoice = null;
 
             // --- 3. DOM 元素 ---
             const canvas = document.getElementById('draw-canvas');
             const ctx = canvas.getContext('2d');
-            const playBtn = document.getElementById('play-btn'); // [FIX] 这个按钮现在存在于HTML中
+            const playBtn = document.getElementById('play-btn');
             const clearBtn = document.getElementById('clear-btn');
             const showAnswerBtn = document.getElementById('show-answer-btn');
             const nextBtn = document.getElementById('next-btn');
             const tabChars = document.getElementById('tab-chars');
             const tabStrokes = document.getElementById('tab-strokes');
-            const progressEl = document.getElementById('progress'); // [FIX] 这个元素现在存在于HTML中
+            const progressEl = document.getElementById('progress');
             const answerDisplayEl = document.getElementById('answer-display');
             const answerTextEl = document.getElementById('answer-text');
             const completeDisplayEl = document.getElementById('complete-display');
             const restartBtn = document.getElementById('restart-btn');
             const dictationArea = document.getElementById('dictation-area');
             const ttsUnsupported = document.getElementById('tts-unsupported');
-
-            // [新增] 开始屏幕和练习容器
             const startScreen = document.getElementById('start-screen');
             const startBtn = document.getElementById('start-btn');
             const practiceContainer = document.getElementById('practice-container');
+            const comparisonBox = document.getElementById('comparison-box');
+            const comparisonTextEl = document.getElementById('comparison-text');
 
             // --- 4. 语音合成 ---
             let synth;
             if ('speechSynthesis' in window) {
                 synth = window.speechSynthesis;
             } else {
-                // 不支持语音
                 dictationArea.classList.add('hidden');
                 ttsUnsupported.classList.remove('hidden');
-                return; // 结束初始化
+                return;
             }
 
-            // [新增] 尝试加载中文语音
             function loadVoices() {
-                // 尝试找到 'zh-CN' 语音
                 const voices = synth.getVoices();
                 chineseVoice = voices.find(voice => voice.lang === 'zh-CN');
-                
-                // 如果找不到 'zh-CN'，尝试找任何中文语音
                 if (!chineseVoice) {
                     chineseVoice = voices.find(voice => voice.lang.startsWith('zh'));
                 }
             }
 
             // --- 5. 核心功能函数 ---
-
-            // Fisher-Yates 洗牌算法
             function shuffle(array) {
                 let currentIndex = array.length, randomIndex;
                 while (currentIndex !== 0) {
@@ -186,7 +191,6 @@
                 return array;
             }
 
-            // 切换模式 (生字 / 笔画)
             function setMode(mode) {
                 activeMode = mode;
                 if (mode === 'chars') {
@@ -202,9 +206,7 @@
                 loadWord();
             }
 
-            // 加载单词/笔画
             function loadWord() {
-                // 隐藏结束画面
                 completeDisplayEl.classList.add('hidden');
                 dictationArea.classList.remove('hidden');
                 
@@ -214,77 +216,63 @@
                 }
 
                 currentWord = currentList[currentIndex];
-                
-                // 更新进度
                 progressEl.textContent = `第 ${currentIndex + 1} / ${currentList.length} 个`;
                 
-                // 准备答案
                 if (activeMode === 'chars') {
                     answerTextEl.textContent = currentWord.char;
+                    comparisonTextEl.textContent = currentWord.char;
                 } else {
-                    answerTextEl.textContent = `${currentWord.name} (${currentWord.char})`;
+                    const text = `${currentWord.name} (${currentWord.char})`;
+                    answerTextEl.textContent = text;
+                    // 在笔画模式下，侧边框只显示笔画符号，也使用手写字体
+                    comparisonTextEl.textContent = currentWord.char; 
                 }
                 
-                // 重置状态
                 clearCanvas();
                 hideAnswer();
-                
-                // [修改] 移除自动播放，改为用动画提示用户点击播放
-                playBtn.classList.add('animate-pulse'); // 提示用户点击
+                playBtn.classList.add('animate-pulse');
             }
 
-            // 显示练习完成
             function showCompletion() {
                 dictationArea.classList.add('hidden');
                 completeDisplayEl.classList.remove('hidden');
-                synth.cancel(); // 停止所有语音
+                synth.cancel();
             }
 
-            // 朗读
-            // [ADJUSTMENT] 这是你要求的主要更改
             function speak() {
                 if (!currentWord) return;
-                playBtn.classList.remove('animate-pulse'); // [新增] 一旦点击，就移除动画
-                synth.cancel(); // 停止上一个
+                playBtn.classList.remove('animate-pulse');
+                synth.cancel();
                 
-                // 1. [新增] 朗读提示语 "请听写"
                 const introText = "请听写";
                 const introUtterance = new SpeechSynthesisUtterance(introText);
                 if (chineseVoice) {
                     introUtterance.voice = chineseVoice;
                 } else {
-                    // 确保语音被设置
                     loadVoices();
                     if(chineseVoice) introUtterance.voice = chineseVoice;
                     else introUtterance.lang = 'zh-CN';
                 }
-                introUtterance.rate = 1.0; // 提示语用正常语速
+                introUtterance.rate = 1.0;
                 synth.speak(introUtterance);
 
-
-                // 2. [修改] 朗读当前的字词
                 const textToSpeak = (activeMode === 'chars') ? currentWord.char : currentWord.name;
                 const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
-                // [修改] 关键修复：显式设置语音
                 if (chineseVoice) {
                     utterance.voice = chineseVoice;
                 } else {
-                    // 最后的备用方案
                     utterance.lang = 'zh-CN';
                 }
-                
-                utterance.rate = 0.8; // 稍慢的语速
-                
-                // [关键] 浏览器会自动将这个语音排在 "请听写" 之后播放
+                utterance.rate = 0.8;
                 synth.speak(utterance);
             }
 
-            // 显示/隐藏答案
             function toggleAnswer() {
                 isAnswerVisible = !isAnswerVisible;
                 if (isAnswerVisible) {
                     answerDisplayEl.classList.remove('hidden');
+                    comparisonBox.classList.remove('hidden');
+                    
                     showAnswerBtn.textContent = '隐藏答案';
                     showAnswerBtn.classList.remove('bg-yellow-400', 'hover:bg-yellow-500');
                     showAnswerBtn.classList.add('bg-gray-400', 'hover:bg-gray-500');
@@ -296,12 +284,13 @@
             function hideAnswer() {
                 isAnswerVisible = false;
                 answerDisplayEl.classList.add('hidden');
-                showAnswerBtn.textContent = '看答案';
+                comparisonBox.classList.add('hidden');
+
+                showAnswerBtn.textContent = '检查答案';
                 showAnswerBtn.classList.add('bg-yellow-400', 'hover:bg-yellow-500');
                 showAnswerBtn.classList.remove('bg-gray-400', 'hover:bg-gray-500');
             }
 
-            // 下一个
             function nextWord() {
                 currentIndex++;
                 loadWord();
@@ -309,21 +298,19 @@
 
             // --- 6. 画板功能 ---
             function resizeCanvas() {
-                // 设置canvas的CSS宽度为100%，然后获取其像素宽度
-                canvas.style.width = '100%';
                 const width = canvas.clientWidth;
-                const height = width * 0.75; // 保持 4:3 比例
+                const height = width * 1.0; // 保持 1:1 比例，使其更像一个方框
                 
-                // 设置canvas的绘图表面大小
                 canvas.width = width;
                 canvas.height = height;
 
-                // 设置绘图样式
                 ctx.strokeStyle = '#333';
-                ctx.lineWidth = 5;
+                ctx.lineWidth = 6; // [MODIFIED] 把笔画加粗一点
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
             }
+
+// ... 剩余的 JavaScript 代码 (getEventPosition, startDrawing, draw, stopDrawing, clearCanvas) ...
 
             function getEventPosition(e) {
                 const rect = canvas.getBoundingClientRect();
@@ -347,7 +334,7 @@
 
             function draw(e) {
                 if (!isDrawing) return;
-                e.preventDefault(); // 防止滚动
+                e.preventDefault();
                 const { x, y } = getEventPosition(e);
                 ctx.lineTo(x, y);
                 ctx.stroke();
@@ -365,60 +352,45 @@
             }
 
             // --- 7. 事件监听 ---
-            
-            // [新增] 开始按钮监听
             startBtn.addEventListener('click', () => {
-                // 1. 再次尝试加载语音，因为用户已交互
                 loadVoices();
-
-                // 2. [关键] 播放一个简短的“唤醒”语音来启动语音引擎
-                synth.cancel(); // 清除队列
+                synth.cancel();
                 const welcomeUtterance = new SpeechSynthesisUtterance('你好');
-                
                 if (chineseVoice) {
                     welcomeUtterance.voice = chineseVoice;
                 } else {
                     welcomeUtterance.lang = 'zh-CN';
                 }
-                welcomeUtterance.rate = 0.1; // 播放得很快
+                welcomeUtterance.rate = 0.1;
                 synth.speak(welcomeUtterance);
                 
-                // 3. 隐藏开始屏幕, 显示练习界面
                 startScreen.classList.add('hidden');
                 practiceContainer.classList.remove('hidden');
-
-                // 4. 加载第一个词
-                setMode('chars'); // 默认加载生字
+                
+                resizeCanvas(); 
+                setMode('chars');
             });
 
-            // 模式切换
             tabChars.addEventListener('click', () => setMode('chars'));
             tabStrokes.addEventListener('click', () => setMode('strokes'));
             
-            // 控制按钮
             playBtn.addEventListener('click', speak);
             clearBtn.addEventListener('click', clearCanvas);
             showAnswerBtn.addEventListener('click', toggleAnswer);
             nextBtn.addEventListener('click', nextWord);
             restartBtn.addEventListener('click', () => setMode(activeMode));
             
-            // 画板事件 (支持鼠标和触摸)
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing); // 移出画布也停止
-
+            canvas.addEventListener('mouseout', stopDrawing);
             canvas.addEventListener('touchstart', startDrawing);
             canvas.addEventListener('touchmove', draw);
             canvas.addEventListener('touchend', stopDrawing);
             
-            // 窗口大小调整
             window.addEventListener('resize', resizeCanvas);
 
             // --- 8. 初始化 ---
-            resizeCanvas();
-            
-            // [修改] 立即加载语音，并监听变化
             loadVoices();
             if (synth.onvoiceschanged !== undefined) {
                 synth.onvoiceschanged = loadVoices;
